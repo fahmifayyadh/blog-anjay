@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Blog;
-use Auth;
+use Illuminate\Support\Facades\Auth;
 
 class BlogController extends Controller
 {
@@ -40,9 +40,11 @@ class BlogController extends Controller
     public function store(Request $request)
     {
         $user = Auth::user();
-
+        $extension = $request->file('image')->getClientOriginalExtension();
+        $filenametostore = md5($user). $extension;
         Blog::create([
             'title'=> $request->title,
+            'image' => $request->image->storeAs('public/thumbnail', $filenametostore),
             'value' => $request->value,
             'user_id'=>$user->id
         ]);
@@ -95,6 +97,13 @@ class BlogController extends Controller
      */
     public function destroy($id)
     {
-        //
+        $blog = Blog::where('id', $id)->first();
+        try {
+            unlink($blog->image);
+        }catch (\Error $error){
+            return redirect()->back();
+        }
+        $blog->delete();
+        return redirect('home');
     }
 }
